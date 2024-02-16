@@ -1,4 +1,6 @@
 
+#Last date changed: 16-02-2024
+
 library(ggplot2)
 library(dplyr)
 library(forecast)
@@ -263,8 +265,8 @@ CAAP_12 <- merge(CAAP_12, counterfact_data_CAAP_12, by = "Date", all.x = TRUE)
 
 # Plot
 plot(Inc_CAAP_12 ~ Date, data = CAAP_12, type = "l", col = "royalblue2", lwd = 2, 
-     main = "CAAP incidence plus trend",
-     xlab = "Year", ylab = "Incidence/1,000")
+     main = "CAAP incidence plus trend; children under 12m",
+     xlab = "Date", ylab = "Incidence/1,000")
 
 # Lines for trends values
 lines(CAAP_12$pred_values ~ CAAP_12$Date , col = "orangered2", lwd = 2)
