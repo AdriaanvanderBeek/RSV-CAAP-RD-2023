@@ -1,10 +1,13 @@
 
+#Last date changed: 17-02-2024
 
 library(ggplot2)
 library(dplyr)
 library(forecast)
-library(knitr)
-library(zoo)
+library(kableExtra)
+#library(knitr)
+#library(svglite)
+#library(zoo)
 
 
 
@@ -30,8 +33,7 @@ plot(RSV_CAAP_12$Date, RSV_CAAP_12$Inc_RSV_CAAP_12, type = "l", col = "grey40", 
 # Plot trends in the Pre-, Early- and Late-PCV periods
 plot <- ggplot(data = RSV_CAAP_12, aes(x = Date, y = Inc_RSV_CAAP_12)) +
   geom_line() +
-  
-  # Add trend lines for Pre-, Early- and Late-PCV periods
+
   
   geom_smooth(data = subset(RSV_CAAP_12, Date >= as.Date("2004-07-01") & Date <= as.Date("2009-06-30")),
               method = "lm", formula = y ~ poly(x, 1), se = FALSE, color = "orangered") +
@@ -101,76 +103,60 @@ par(mfrow=c(1, 1))
 
 
 
-# Set the ranges for p, d, q
-p_values <- 0:3
-d_values <- 0:1
-q_values <- 0:3
-
-# Initialize variables for best AIC, corresponding model, and 'best' order
-best_aic <- Inf
-best_model <- NULL
-best_order <- c(0, 0, 0)
-
-# Create an empty data frame to store results
-results_table <- data.frame(p = numeric(0), d = numeric(0), q = numeric(0), AIC = numeric(0))
-
-# Fit ARIMA(0,0,0) model (unadjusted model)
-unadjusted_model <- arima(RSV_CAAP_12$seas_adj_RSV_CAAP_12, order = c(0, 0, 0))
-unadjusted_aic <- AIC(unadjusted_model)
-
-# Store results for the unadjusted model in the data frame
-results_table <- rbind(results_table, c(0, 0, 0, unadjusted_aic))
-
-# Nested loops for grid search
+# Grid search ARIMA (p, q, d)
 for (p in p_values) {
   for (d in d_values) {
     for (q in q_values) {
       # Fit ARIMA model
       current_order <- c(p, d, q)
-      current_model <- arima(RSV_CAAP_12$seas_adj_RSV_CAAP_12, order = current_order)
+      current_arima_model <- arima(CAAP_12$seas_adj_CAAP_12, order = current_order)
       
       # Calculate AIC
-      current_aic <- AIC(current_model)
+      current_aic <- AIC(current_arima_model)
       
       # Store results in the data frame
       results_table <- rbind(results_table, c(p, d, q, current_aic))
       
-      # Check if current AIC is lower than the best AIC
-      if (current_aic < best_aic) {
-        best_aic <- current_aic
-        best_model <- current_model
-        best_order <- current_order
+      # Check if current AIC is lower than the lowest AIC
+      if (current_aic < lowest_aic) {
+        lowest_aic <- current_aic
+        selected_arima_model <- current_arima_model
+        selected_arima_order <- current_order
       }
     }
   }
 }
 
-# Add column names to the results table
+
 colnames(results_table) <- c("p", "d", "q", "AIC")
 
-# Sort the results table by AIC in ascending order
+# Sort
 results_table <- results_table[order(results_table$AIC), ]
 
-# Print the sorted results table
-print(results_table)
+results_table$Rank <- seq_len(nrow(results_table))
+
+results_table <- results_table[, c("Rank", names(results_table)[1:4])]
+
+# Print table
+kable(head(results_table, 5), format = "markdown", row.names = FALSE) %>%
+  kable_styling(full_width = FALSE, position = "center", latex_options = "scale_down") %>%
+  add_header_above(c(" " = 1, "Five ARIMA p, d, q orders with lowest AIC" = 4))
 
 
-# Print the best model order and AIC
-cat("'Best' Model Order:", best_order, "\n")
-cat("Lowest AIC:", best_aic, "\n")
-
-# Fit the best model
-best_model <- arima(RSV_CAAP_12$seas_adj_RSV_CAAP_12, order = best_order)
 
 
-# Plot ACF and PACF of the residuals of the best model in a single column
+# Fit the model
+arima_model <- arima(RSV_CAAP_12$seas_adj_RSV_CAAP_12, order = c(0,0,1))
+
+
+# Plot ACF and PACF of the residuals
 par(mfrow = c(2, 1))
-acf(residuals(best_model), main = "ACF of Residuals")
-pacf(residuals(best_model), main = "PACF of Residuals")
+acf(residuals(arima_model), main = "ACF of Residuals")
+pacf(residuals(arima_model), main = "PACF of Residuals")
 par(mfrow=c(1, 1))
 
 # Box-Ljung test
-residuals <- residuals(best_model)
+residuals <- residuals(arima_model)
 
 box_ljung_test <- Box.test(residuals, type = "Ljung-Box", lag = 20)
 
@@ -178,13 +164,12 @@ print(box_ljung_test)
 
 
 
-# Extract the fitted values from the arima object
-fitted_RSV_CAAP_12 <- fitted(best_model)
+# Extract the fitted values from the ARIMA model
+fitted_RSV_CAAP_12 <- fitted(arima_model)
 
-# Add the fitted values as a new column to CAAP_12
+# Add the fitted values to CAAP_12 data frame
 RSV_CAAP_12$fitted_RSV_CAAP_12 <- fitted_RSV_CAAP_12
 
-# View the updated data frame
 head(RSV_CAAP_12)
 
 
@@ -196,7 +181,7 @@ summary_lin_RSV_CAAP_12
 
 
 # Confidence intervals of the model coefficients
-confint.RSV_CAAP_12 <- confint.default(lin_RSV_CAAP_12, level = 0.95)
+confint_RSV_CAAP_12 <- confint.default(lin_RSV_CAAP_12, level = 0.95)
 
 
 # Trends and level change
@@ -209,16 +194,16 @@ trends_table_RSV_CAAP_12 <- data.frame(
     (summary(lin_RSV_CAAP_12)$coefficients[5,1]) + (summary(lin_RSV_CAAP_12)$coefficients[4,1]) + (summary(lin_RSV_CAAP_12)$coefficients[2,1])
   ), 3),
   CI_Lower = round(c(
-    confint.RSV_CAAP_12[2,1],
-    confint.RSV_CAAP_12[3,1],
-    confint.RSV_CAAP_12[4,1] + confint.RSV_CAAP_12[2,1],
-    confint.RSV_CAAP_12[5,1] + confint.RSV_CAAP_12[4,1] + confint.RSV_CAAP_12[2,1]
+    confint_RSV_CAAP_12[2,1],
+    confint_RSV_CAAP_12[3,1],
+    confint_RSV_CAAP_12[4,1] + confint_RSV_CAAP_12[2,1],
+    confint_RSV_CAAP_12[5,1] + confint_RSV_CAAP_12[4,1] + confint_RSV_CAAP_12[2,1]
   ), 3),
   CI_Upper = round(c(
-    confint.RSV_CAAP_12[2,2],
-    confint.RSV_CAAP_12[3,2],
-    confint.RSV_CAAP_12[4,2] + confint.RSV_CAAP_12[2,2],
-    confint.RSV_CAAP_12[5,2] + confint.RSV_CAAP_12[4,2] + confint.RSV_CAAP_12[2,2]
+    confint_RSV_CAAP_12[2,2],
+    confint_RSV_CAAP_12[3,2],
+    confint_RSV_CAAP_12[4,2] + confint_RSV_CAAP_12[2,2],
+    confint_RSV_CAAP_12[5,2] + confint_RSV_CAAP_12[4,2] + confint_RSV_CAAP_12[2,2]
   ), 3),
   p_value = round(c(
     summary(lin_RSV_CAAP_12)$coefficients[2,4],
@@ -235,13 +220,6 @@ kable(
   align = c("l", "c", "c", "c", "c"),
   col.names = c("Period", "Trend", "Lower 95% CI", "Upper 95% CI", "p value")
 )
-
-# Write the table to a CSV file
-current_directory <- getwd()
-
-file_path <- file.path(current_directory, "trends table RSV-CAAP 12.csv")
-
-write.csv(trends_table_RSV_CAAP_12, file = file_path, row.names = FALSE)
 
 
 
@@ -264,7 +242,7 @@ plot(Inc_RSV_CAAP_12 ~ Date, data = RSV_CAAP_12, type = "l", col = "royalblue2",
      main = "RSV-CAAP incidence plus trend",
      xlab = "Date", ylab = "Incidence/1,000")
 
-# Lines for trends values
+# Lines for trends
 lines(RSV_CAAP_12$pred_values ~ RSV_CAAP_12$Date , col = "orangered2", lwd = 2)
 
 # Lines for confidence intervals
