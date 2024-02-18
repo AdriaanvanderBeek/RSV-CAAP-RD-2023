@@ -5,9 +5,6 @@ library(ggplot2)
 library(dplyr)
 library(forecast)
 library(kableExtra)
-#library(knitr)
-#library(svglite)
-#library(zoo)
 
 
 
@@ -102,6 +99,7 @@ pacf(CAAP_12$seas_adj_CAAP_12, main="PACF Plot (Un-adjusted)", lag.max=20)
 par(mfrow=c(1, 1))
 
 
+# Grid search ARIMA (p, q, d)
 
 # Set the ranges for p, d, q
 p_values <- 0:3
@@ -123,7 +121,7 @@ unadjusted_aic <- AIC(unadjusted_model)
 # Store results for the unadjusted model in the data frame
 results_table <- rbind(results_table, c(0, 0, 0, unadjusted_aic))
 
-# Grid search ARIMA (p, q, d)
+
 for (p in p_values) {
   for (d in d_values) {
     for (q in q_values) {
@@ -158,7 +156,7 @@ results_table$Rank <- seq_len(nrow(results_table))
 results_table <- results_table[, c("Rank", names(results_table)[1:4])]
 
 # Print table
-kable(head(results_table, 5), format = "markdown", row.names = FALSE) %>%
+kable(head(results_table, 10), format = "markdown", row.names = FALSE) %>%
   kable_styling(full_width = FALSE, position = "center", latex_options = "scale_down") %>%
   add_header_above(c(" " = 1, "Five ARIMA p, d, q orders with lowest AIC" = 4))
 
@@ -257,28 +255,32 @@ CAAP_12[(CAAP_12$Time < 61 | CAAP_12$Time > 84), c("pred_values", "lower_ci", "u
 
 head(CAAP_12)
 
+# PLot
+CAAP_12_plot <- ggplot(CAAP_12, aes(x = Date, y = Inc_CAAP_12)) +
+  geom_line(aes(y = Inc_CAAP_12, color = "CAAP incidence"), lwd = 1) +
+  geom_line(aes(y = pred_values, color = "Trend"), lwd = 1) +
+  geom_ribbon(aes(ymin = lower_ci, ymax = upper_ci, fill = "Trend 95% CI"), alpha = 0.3, color = "royalblue2") +
+  labs(title = "CAAP incidence plus trend; children under 12m",
+       x = "Year", y = "Incidence/1,000") +
+  theme_minimal() +
+  theme(legend.position = "top",
+        legend.box.background = element_rect(color = "black", size = 1, linetype = "solid"),
+        panel.grid = element_blank()) +  # Remove grid lines
+  scale_fill_manual(values = c("Trend 95% CI" = "royalblue2")) +
+  scale_color_manual(values = c("CAAP incidence" = "black", "Trend" = "royalblue2")) +
+  scale_alpha_manual(values = c("Trend 95% CI" = 0.3)) +
+  expand_limits(x = c(as.Date("2004-07-01"), as.Date("2019-06-30"))) +
+  scale_x_date(expand = c(0, 0),
+               breaks = as.Date(c("2004-07-01", "2005-07-01", "2006-07-01", "2007-07-01", "2008-07-01", "2009-07-01", "2010-07-01", "2011-07-01", "2012-07-01", "2013-07-01", "2014-07-01", "2015-07-01", "2016-07-01", "2017-07-01", "2018-07-01")),
+               labels = c("04-05", "05-06", "06-07", "07-08", "08-09", "09-10", "10-11", "11-12", "12-13", "13-14", "14-15", "15-16", "16-17", "17-18", "18-19")) +
+  # Lines begin & end of interim period
+  geom_vline(xintercept = as.Date("2009-07-01"), col = "grey40", lty = 2) +
+  geom_vline(xintercept = as.Date("2011-07-01"), col = "grey40", lty = 2) +
+  guides(color = guide_legend(order = 1),
+         fill = guide_legend(order = 2)) +
+  labs(fill = NULL, color = NULL, alpha = NULL)
 
-# Plot
-plot(Inc_CAAP_12 ~ Date, data = CAAP_12, type = "l", col = "royalblue2", lwd = 2, 
-     main = "CAAP incidence plus trend",
-     xlab = "Year", ylab = "Incidence/1,000")
-
-# Lines for trends
-lines(CAAP_12$pred_values ~ CAAP_12$Date , col = "orangered2", lwd = 2)
-
-# Lines for confidence intervals
-lines(CAAP_12$lower_ci ~ CAAP_12$Date, col = "black", lty = 2, lwd = 2)
-lines(CAAP_12$upper_ci ~ CAAP_12$Date, col = "black", lty = 2, lwd = 2)
-
-# Lines begin & end of interim period
-abline(v = as.numeric(as.Date("2009-07-01")), col = "grey40", lty = 2)
-abline(v = as.numeric(as.Date("2011-07-01")), col = "grey40", lty = 2)
-
-# Legend
-legend("topright", legend = c("CAAP incidence", "Trend", "Trend 95% CI"), 
-       col = c("royalblue2", "orangered2", "black"), lty = c(1, 1, 2), lwd = c(2, 2, 2), cex = 0.8)
-
-
+print(CAAP_12_plot)
 
 
 
@@ -311,35 +313,50 @@ counterfact_data_CAAP_12 <- data.frame(
 # Merge counterfactual data frame with original data frame
 CAAP_12 <- merge(CAAP_12, counterfact_data_CAAP_12, by = "Date", all.x = TRUE)
 
+# Prevent "gap" in plot between June 2009 and July 2009
+CAAP_12$pred_values[CAAP_12$Date == as.Date("2009-07-01")] <- CAAP_12$Pred_counterfact_CAAP_12[CAAP_12$Date == as.Date("2009-07-01")]
+CAAP_12$lower_ci[CAAP_12$Date == as.Date("2009-07-01")] <- CAAP_12$Counterfact_Lower_CI[CAAP_12$Date == as.Date("2009-07-01")]
+CAAP_12$upper_ci[CAAP_12$Date == as.Date("2009-07-01")] <- CAAP_12$Counterfact_Upper_CI[CAAP_12$Date == as.Date("2009-07-01")]
 
+# Stable Expected trend from July 2013
+date_to_copy_from <- as.Date("2013-06-01")
+dates_to_copy_to <- seq(as.Date("2013-07-01"), as.Date("2019-06-01"), by = "months")
+
+CAAP_12$Pred_counterfact_CAAP_12[CAAP_12$Date %in% dates_to_copy_to] <- CAAP_12$Pred_counterfact_CAAP_12[CAAP_12$Date == date_to_copy_from]
+CAAP_12$Counterfact_Lower_CI[CAAP_12$Date %in% dates_to_copy_to] <- CAAP_12$Counterfact_Lower_CI[CAAP_12$Date == date_to_copy_from]
+CAAP_12$Counterfact_Upper_CI[CAAP_12$Date %in% dates_to_copy_to] <- CAAP_12$Counterfact_Upper_CI[CAAP_12$Date == date_to_copy_from]
 
 # Plot and save
 png("CAAP under 12 months plot.png", width = 800, height = 600)
 
-plot(Inc_CAAP_12 ~ Date, data = CAAP_12, type = "l", col = "royalblue2", lwd = 2, 
-     main = "CAAP incidence plus trend; children under 12m",
-     xlab = "Date", ylab = "Incidence/1,000")
 
-# Lines for trends values
-lines(CAAP_12$pred_values ~ CAAP_12$Date , col = "orangered2", lwd = 2)
+CAAP_12_plus_expected <- ggplot(CAAP_12, aes(x = Date, y = Inc_CAAP_12)) +
+  geom_line(aes(y = Inc_CAAP_12, color = "CAAP incidence"), lwd = 1) +
+  geom_line(aes(y = pred_values, color = "Trend"), lwd = 1) +
+  geom_ribbon(aes(ymin = lower_ci, ymax = upper_ci, fill = "Trend 95% CI"), alpha = 0.3, color = "royalblue2") +
+  geom_line(aes(y = Pred_counterfact_CAAP_12, color = "Expected trend"), lwd = 1) +
+  geom_ribbon(aes(ymin = Counterfact_Lower_CI, ymax = Counterfact_Upper_CI, fill = "Expected trend 95% CI"), alpha = 0.3, color = "orangered2") +
+  labs(title = "CAAP incidence plus trend; children under 12m",
+       x = "Year", y = "Incidence/1,000") +
+  theme_minimal() +
+  theme(legend.position = "top",
+        legend.box.background = element_rect(color = "black", size = 1, linetype = "solid"),
+        panel.grid = element_blank()) +
+  scale_fill_manual(values = c("Expected trend 95% CI" = "orangered2", "Trend 95% CI" = "royalblue2")) +
+  scale_color_manual(values = c("CAAP incidence" = "black", "Trend" = "royalblue2", "Expected trend" = "orangered2")) +
+  scale_alpha_manual(values = c("Trend 95% CI" = 0.3)) +  # Adjust alpha here
+  expand_limits(x = c(as.Date("2004-07-01"), as.Date("2019-06-30"))) +
+  scale_x_date(expand = c(0, 0),
+               breaks = as.Date(c("2004-07-01", "2005-07-01", "2006-07-01", "2007-07-01", "2008-07-01", "2009-07-01", "2010-07-01", "2011-07-01", "2012-07-01", "2013-07-01", "2014-07-01", "2015-07-01", "2016-07-01", "2017-07-01", "2018-07-01")),
+               labels = c("04-05", "05-06", "06-07", "07-08", "08-09", "09-10", "10-11", "11-12", "12-13", "13-14", "14-15", "15-16", "16-17", "17-18", "18-19")) +
+  # Lines begin & end of interim period
+  geom_vline(xintercept = as.Date("2009-07-01"), col = "grey40", lty = 2) +
+  geom_vline(xintercept = as.Date("2011-07-01"), col = "grey40", lty = 2) +
+  guides(color = guide_legend(order = 1),
+         fill = guide_legend(order = 2)) +
+  labs(fill = NULL, color = NULL, alpha = NULL)  # Remove legend titles
 
-# Lines for confidence intervals
-lines(CAAP_12$lower_ci ~ CAAP_12$Date, col = "black", lty = 2, lwd = 2)
-lines(CAAP_12$upper_ci ~ CAAP_12$Date, col = "black", lty = 2, lwd = 2)
+print(CAAP_12_plus_expected)
 
-# Line for counterfactual trend
-lines(CAAP_12$Pred_counterfact_CAAP_12 ~ CAAP_12$Date , col = "cyan2", lwd = 2)
-
-# Lines for counterfactual trend confidence intervals
-lines(CAAP_12$Counterfact_Lower_CI ~ CAAP_12$Date, col = "cyan2", lty = 2, lwd = 2)
-lines(CAAP_12$Counterfact_Upper_CI ~ CAAP_12$Date, col = "cyan2", lty = 2, lwd = 2)
-
-# Lines begin & end of interim period
-abline(v = as.numeric(as.Date("2009-07-01")), col = "grey40", lty = 2)
-abline(v = as.numeric(as.Date("2011-07-01")), col = "grey40", lty = 2)
-
-# Legend
-legend("topright", legend = c("CAAP incidence", "Trend", "Trend 95% CI", "Counterfactual trend", "Counterfactual trend 95% CI"), 
-       col = c("royalblue2", "orangered2", "black", "cyan2", "cyan2"), lty = c(1, 1, 2, 1, 2), lwd = c(2, 2, 2, 2, 2), cex = 0.8)
 
 dev.off()
