@@ -249,6 +249,7 @@ kable(
 # Calculate predicted values and confidence intervals
 pred_RSV_CAAP_12 <- predict(lin_RSV_CAAP_12, interval = "confidence", level = 0.95)
 
+
 # Add predicted values and confidence intervals to the data frame
 RSV_CAAP_12$pred_values <- NA
 RSV_CAAP_12$lower_ci <- NA
@@ -354,7 +355,7 @@ RSV_CAAP_12_plus_expected <- ggplot(RSV_CAAP_12, aes(x = Date, y = Inc_RSV_CAAP_
         panel.grid = element_blank()) +
   scale_fill_manual(values = c("Expected trend 95% CI" = "orangered2", "Trend 95% CI" = "royalblue2")) +
   scale_color_manual(values = c("RSV-CAAP incidence" = "black", "Trend" = "royalblue2", "Expected trend" = "orangered2")) +
-  scale_alpha_manual(values = c("Trend 95% CI" = 0.3)) +  # Adjust alpha here
+  scale_alpha_manual(values = c("Trend 95% CI" = 0.3)) +
   expand_limits(x = c(as.Date("2004-07-01"), as.Date("2019-06-30"))) +
   scale_x_date(expand = c(0, 0),
                breaks = as.Date(c("2004-07-01", "2005-07-01", "2006-07-01", "2007-07-01", "2008-07-01", "2009-07-01", "2010-07-01", "2011-07-01", "2012-07-01", "2013-07-01", "2014-07-01", "2015-07-01", "2016-07-01", "2017-07-01", "2018-07-01")),
@@ -364,7 +365,7 @@ RSV_CAAP_12_plus_expected <- ggplot(RSV_CAAP_12, aes(x = Date, y = Inc_RSV_CAAP_
   geom_vline(xintercept = as.Date("2011-07-01"), col = "grey40", lty = 2) +
   guides(color = guide_legend(order = 1),
          fill = guide_legend(order = 2)) +
-  labs(fill = NULL, color = NULL, alpha = NULL)  # Remove legend titles
+  labs(fill = NULL, color = NULL, alpha = NULL)
 
 print(RSV_CAAP_12_plus_expected)
 
