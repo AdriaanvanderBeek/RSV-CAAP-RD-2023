@@ -7,7 +7,7 @@ library(reshape2)
 library(MASS)
 library(ggplot2)
 library(dplyr)
-source('./R/functions_its.R')
+source('./functions_its.R')
 
 
 
@@ -121,8 +121,8 @@ p4 <- ggplot(ds.mod1, aes(x=date, y=caap.cases)) +
   ylab("Number of CAAP cases") +
   xlab("Date") +
   theme_classic() +
-  geom_line(data = ds.mod1, aes(x=date, y = caap.cases), col = 'green') +
-  geom_line(data=ds.mod1, aes(x=date, y=pred.caap), col='black', lty=2) +
+  geom_line(data = ds.mod1, aes(x=date, y = caap.cases), col = 'black') +
+  geom_line(data=ds.mod1, aes(x=date, y=pred.caap), col='blue', lty=2) +
   geom_line(data=ds.mod1, aes(x=date, y=pred.caap.cf.lim), col='red', lty=2) +
   ylim(0, max(ds.mod1$pred.caap.cf))+
   geom_hline(yintercept=0, col='black', lty=1) 
@@ -134,7 +134,7 @@ p4a <- ggplot(ds.mod1, aes(x=date, y=caap.cases)) +
   ylab("Number of CAAP cases") +
   xlab("Date") +
   theme_classic() +
-  geom_line(data = ds.mod1, aes(x=date, y = caap.cases), col = 'green') +
+  geom_line(data = ds.mod1, aes(x=date, y = caap.cases), col = 'black') +
   geom_line(data=ds.mod1, aes(x=date, y=pred.caap.cf.lim), col='red', lty=2) +
   ylim(0, max(ds.mod1$pred.caap.cf))+
   geom_hline(yintercept=0, col='black', lty=1) 
@@ -154,7 +154,7 @@ ds.mod1$caap.rr <- ds.mod1$pred.caap /ds.mod1$pred.caap.cf
 
 rr.caap.eval<- mean(ds.mod1$caap.rr[eval.period])
 
-
+print(rr.caap.eval)
 
 # Set the seed for reproducibility
 set.seed(100)
