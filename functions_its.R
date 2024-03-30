@@ -5,7 +5,7 @@ step_func <- function(ds,
                      post_period3=c('2015-07-01', '2019-06-01'),
                      vax.vars=c('post1','post2', 'post3') ,
                      other.covars='none' ,
-                     mod='pois',
+                     mod='negbin',
                      denom, 
                      outcome_name ){
   
@@ -83,7 +83,7 @@ step_func <- function(ds,
   preds.stage1.regmean <-
     exp(as.matrix(covars3) %*% t(pred.coefs.reg.mean) +ds$log.offset)
   
-  preds.q<-t(apply(preds.stage1.regmean,1,quantile, probs=c(0.025,0.5,0.975)))
+  preds.q<-t(apply(preds.stage1.regmean,1,quantile, probs=c(0.025,0.5,0.975), na.rm = TRUE))
   
   #Then for counterfactual, set post-vax effects to 0.
   covars3.cf <-
@@ -95,16 +95,16 @@ step_func <- function(ds,
   covars3.cf <-
     cbind.data.frame(rep(1, times = nrow(covars3.cf)), covars3.cf)
   preds.stage1.regmean.cf <-    exp(as.matrix(covars3.cf) %*% t(pred.coefs.reg.mean)+ ds$log.offset)
-  preds.cf.q<-t(apply(preds.stage1.regmean.cf,1,quantile, probs=c(0.025,0.5,0.975)))
+  preds.cf.q<-t(apply(preds.stage1.regmean.cf,1,quantile, probs=c(0.025,0.5,0.975), na.rm = TRUE))
   
   rr.t <- preds.stage1.regmean / preds.stage1.regmean.cf
-  rr.q.t <- t(apply(rr.t, 1, quantile, probs = c(0.025, 0.5, 0.975)))
+  rr.q.t <- t(apply(rr.t, 1, quantile, probs = c(0.025, 0.5, 0.975),na.rm = TRUE))
   
   last.t<-nrow(rr.t) #evaluate at last time point
   preds.stage1.regmean.SUM <-   preds.stage1.regmean[last.t, ]
   preds.stage1.regmean.cf.SUM <-preds.stage1.regmean.cf[last.t, ]
   rr.post <- preds.stage1.regmean.SUM / preds.stage1.regmean.cf.SUM
-  rr.q.post <- quantile(rr.post, probs = c(0.025, 0.5, 0.975))
+  rr.q.post <- quantile(rr.post, probs = c(0.025, 0.5, 0.975), na.rm = TRUE)
   
   rr.out <- list('rr.q.post' = rr.q.post, 'aic1'=aic1,'outcome'=ds[,outcome_name],
                  'preds.cf.q'=preds.cf.q,'preds.q'=preds.q,'form1'=form1,
