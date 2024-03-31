@@ -1,11 +1,12 @@
 
-library(dplyr)
-library(ggplot2)
-library(MASS)
-library(lubridate)
-library(htmlTable)
 library(zoo)
+library(htmlTable)
 library(lme4)
+library(lubridate)
+library(reshape2)
+library(MASS)
+library(ggplot2)
+library(dplyr)
 source('./functions_its.R')
 
 
