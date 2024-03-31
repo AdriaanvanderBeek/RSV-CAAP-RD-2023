@@ -11,7 +11,7 @@ source('./functions_its.R')
 
 
 # Read data
-ds1<- read.csv('C:/Users/Adrian/OneDrive - Ben Gurion University of the Negev/Documents/PIDU/RSV 2023/CAAP RSV Bronch/CAAP RSV Bronch.csv') 
+ds1<- read.csv('./CAAP RSV Bronch.csv') 
 
 names(ds1)
 
