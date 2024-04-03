@@ -1,4 +1,3 @@
-
 library(zoo)
 library(htmlTable)
 library(lme4)
@@ -85,4 +84,4 @@ mod.rsv.caap.24.59$p.preds.agg
 
 mod.rsv.caap.24.59$p.rr.trend
 
-mod.rsv.caap.24.59$
+

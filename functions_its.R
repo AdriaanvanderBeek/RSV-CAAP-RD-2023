@@ -101,10 +101,15 @@ step_func <- function(ds,
   
   preds.stage1.regmean.cf <-    exp(as.matrix(covars3.cf) %*% t(pred.coefs.reg.mean)+ ds$log.offset)
   
-  preds.cf.q<-t(apply(preds.stage1.regmean.cf,1,quantile, probs=c(0.025,0.5,0.975)))
+  #preds.cf.q<-t(apply(preds.stage1.regmean.cf,1,quantile, probs=c(0.025,0.5,0.975)))
   
   rr.t <- preds.stage1.regmean / preds.stage1.regmean.cf
   rr.q.t <- t(apply(rr.t, 1, quantile, probs = c(0.025, 0.5, 0.975)))
+  
+  #incidence
+  preds.stage1.regmean.inc <- apply(preds.stage1.regmean,2, function(X) X/exp(ds$log.offset)*1000)
+  
+  preds.stage1.regmean.cf.inc <- apply(preds.stage1.regmean.cf,2, function(X) X/exp(ds$log.offset)*1000)
   
   last.t<-nrow(rr.t) #evaluate at last time point
   preds.stage1.regmean.SUM <-   preds.stage1.regmean[last.t, ]
@@ -145,26 +150,28 @@ step_func <- function(ds,
     geom_hline(yintercept=1, lty=2, col='red')+
     geom_vline(xintercept=as.numeric(as.Date(post_period1[1])), lty=2, col='black')
   
-  preds.cf.q<-t(apply(preds.stage1.regmean.cf,1,quantile, probs=c(0.025,0.5,0.975)))%>% 
+  #plot INCIDENCE
+  preds.cf.q<-t(apply(preds.stage1.regmean.cf.inc,1,quantile, probs=c(0.025,0.5,0.975)))%>% 
     cbind.data.frame(., 'date'=as.Date(ds$date))  %>%
     rename(median_cf=`50%`, lcl_cf=`2.5%`, ucl_cf=`97.5%`)
   
-  preds.q<-t(apply(preds.stage1.regmean,1,quantile, probs=c(0.025,0.5,0.975)))%>% 
+  preds.q<-t(apply(preds.stage1.regmean.inc,1,quantile, probs=c(0.025,0.5,0.975)))%>% 
     cbind.data.frame(., 'date'=as.Date(ds$date))  %>%
     rename(median_pred=`50%`, lcl_pred=`2.5%`, ucl_pred=`97.5%`)
   
   all.preds <- preds.cf.q %>%
     left_join(preds.q, by='date') %>%
-    cbind.data.frame('outcome'=ds[,outcome_name])
+    cbind.data.frame('outcome'=ds[,outcome_name]) %>%
+    mutate(outcome.inc = outcome / exp(ds$log.offset)*1000)
   
   p.preds <- all.preds %>%
     ggplot( aes( x=date, y=median_pred)) +
     geom_ribbon(data=all.preds, aes(x=date, ymin=lcl_cf, ymax=ucl_cf), alpha=0.1) +
     geom_line() +
-    geom_point(data=all.preds, aes(x=date, y=outcome), color='red', alpha=0.3) +
-    geom_line(data=all.preds, aes(x=date, y=median_cf), color='white', lty=2) +
+    geom_point(data=all.preds, aes(x=date, y=outcome.inc), color='red', alpha=0.3) +
+    geom_line(data=all.preds, aes(x=date, y=median_cf), color='blue', lty=2) +
     theme_classic() +
-    ylab('Number of cases') +
+    ylab('Cases/1000') +
     ylim(0,NA)+
     geom_vline(xintercept=as.numeric(as.Date(post_period1[1])), lty=2, col='black')
   
@@ -172,13 +179,13 @@ step_func <- function(ds,
   agg.pred <- all.preds %>%
     mutate(year=year(date)) %>%
     group_by(year) %>%
-    summarize( across(c(median_pred,lcl_cf, ucl_cf, median_cf, outcome), sum )) 
+    summarize( across(c(median_pred,lcl_cf, ucl_cf, median_cf, outcome.inc), sum )) 
   
   p.preds.agg <- agg.pred %>%
     ggplot( aes( x=year, y=median_pred)) +
     geom_ribbon(data=agg.pred, aes(x=year, ymin=lcl_cf, ymax=ucl_cf), alpha=0.1) +
     geom_line() +
-    geom_point(data=agg.pred, aes(x=year, y=outcome), color='red', alpha=0.3) +
+    geom_point(data=agg.pred, aes(x=year, y=outcome.inc), color='red', alpha=0.3) +
     geom_line(data=agg.pred, aes(x=year, y=median_cf), color='white', lty=2) +
     theme_classic() +
     ylab('Number of cases') +
