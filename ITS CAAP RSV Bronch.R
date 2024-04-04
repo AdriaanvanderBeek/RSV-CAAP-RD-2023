@@ -29,9 +29,32 @@ time_points1 <- unique(ds1$date)
 
 
 mod.caap.12 <- step_func(ds=ds1, outcome_name='caap.cases.12', denom='pop.12', mod='negbin', other.covars='none')
+mod.caap.12_t <- step_func(ds=ds1, outcome_name='caap.cases.12', denom='pop.12', mod='negbin', other.covars='time_index')
+
+#aic favors model without trend
+mod.caap.12$aic1
+mod.caap.12_t$aic1
+
+
 mod.rsv.caap.12 <- step_func(ds=ds1, outcome_name='rsv.caap.cases.12', denom='pop.12', mod='negbin', other.covars='none')
+mod.rsv.caap.12_t <- step_func(ds=ds1, outcome_name='rsv.caap.cases.12', denom='pop.12', mod='negbin', other.covars='time_index')
+
+#AIC within 2 points with and without trend, use model without trend
+mod.rsv.caap.12$aic1
+mod.rsv.caap.12_t$aic1
+
 mod.bronch.12 <- step_func(ds=ds1, outcome_name='bronch.cases.12', denom='pop.12', mod='negbin', other.covars='none')
+mod.bronch.12_t <- step_func(ds=ds1, outcome_name='bronch.cases.12', denom='pop.12', mod='negbin', other.covars='time_index')
+
+#favors model without trend
+mod.bronch.12$aic1
+mod.bronch.12_t$aic1
+
+
+
 mod.rsv.bronch.12 <- step_func(ds=ds1, outcome_name='rsv.bronch.cases.12', denom='pop.12', mod='negbin', other.covars='none')
+
+
 mod.caap.12.23 <- step_func(ds=ds1, outcome_name='caap.cases.12.23', denom='pop.12.23', mod='negbin', other.covars='none')
 
 mod.rsv.caap.12.23 <- step_func(ds=ds1, outcome_name='rsv.caap.cases.12.23', denom='pop.12.23', mod='negbin', other.covars='none')
