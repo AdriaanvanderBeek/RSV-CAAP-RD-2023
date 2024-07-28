@@ -10,6 +10,7 @@ library(dplyr)
 library(grid)
 library(gridExtra)
 library(tidyr)
+library(kableExtra)
 
 # Set the working directory (if needed)
 setwd("C:/Users/Adrian/OneDrive - BGU/Documents/PIDU/RSV 2023/RSV-CAAP RD 2024/RSV-CAAP-RD-2023")
@@ -52,13 +53,57 @@ for (i in 1:nrow(model_data)) {
     ds = ds1,
     outcome_name = model_data$outcome_name[i],
     denom = model_data$denom[i],
+    N_CAAP = model_data$N_CAAP[i],
+    N_tested = model_data$N_tested[i],
     mod = model_data$mod[i],
-    other.covars = model_data$other_covars[i]
+    other.covars = model_data$other_covars[i],
+    group = model_data$group[i]
   )
   
   # Assign the result to a variable named after the model
   assign(model_data$model_name[i], result)
 }
+
+
+
+# Initialize a dataframe to store the AIC values
+comparison_table <- data.frame(
+  Model = character(),
+  AIC_without_cov = numeric(),
+  AIC_with_cov = numeric(),
+  stringsAsFactors = FALSE
+)
+
+# Loop through the models
+n <- nrow(model_data) / 2
+for (i in 1:n) {
+  base_model_name <- model_data$model_name[i]
+  cov_model_name <- model_data$model_name[i + n]
+  
+  # Extract the AIC values and round them
+  aic_without <- round(get(base_model_name)[["aic1"]], 1)
+  aic_with <- round(get(cov_model_name)[["aic1"]], 1)
+  
+  # Store the results in the comparison table
+  comparison_table <- rbind(comparison_table, data.frame(
+    Model = base_model_name,
+    AIC_without_cov = aic_without,
+    AIC_with_cov = aic_with
+  ))
+}
+
+# Create the styled table
+AIC_table <- kbl(comparison_table, escape = FALSE) %>%
+  kable_styling(full_width = FALSE)
+
+# Display the styled table
+AIC_table
+
+
+
+
+
+
 
 
 
@@ -104,7 +149,7 @@ colnames(Cumulative_Incidence_Stable_df) <- c("Cumulative_Inc_LCI", "Cumulative_
 print(Rate_Ratios_Late_Period_df)
 print(Cumulative_Incidence_Stable_df)
 
-# Optionally, write the results to CSV files for further analysis
+# Write the results to CSV files for further analysis
 write.csv(Rate_Ratios_Late_Period_df, "Rate_Ratios_RSV_Late_Period_with ratio offset.csv", row.names = TRUE)
 write.csv(Cumulative_Incidence_Stable_df, "Cumulative_Incidence_Stable.csv", row.names = TRUE)
 

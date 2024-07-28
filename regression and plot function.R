@@ -4,13 +4,12 @@ step_func <- function(ds,
                       post_period2=c('2011-07-01', '2015-06-01'),
                       post_period3=c('2015-07-01', '2019-06-01'),
                       vax.vars=c('post1','post2', 'post3') ,
-                      #other.covars='none' ,
-                      other.covars = other.covars,
+                      other.covars,
                       mod=mod,
                       denom,
-                      N_tested = model_data$N_tested[i],
-                      N_CAAP = model_data$N_CAAP[i],
-                      group = model_data$group[i],
+                      N_CAAP,
+                      N_tested,
+                      group,
                       outcome_name ){
   
   ds <- ds[order(ds$date),]
