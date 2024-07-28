@@ -29,16 +29,8 @@ step_func <- function(ds,
   ds$cos12<-cos(2*pi* ds$time_index/12)
   ds$sin6<-sin(2*pi* ds$time_index/6)
   ds$cos6<-cos(2*pi* ds$time_index/6)
-  #ds$month<-month(ds$date)
-  
-  #ds$month <-as.factor(ds$month)
-  #month.dummies <- as.data.frame(model.matrix(~month, data=ds))
-  #month.dummies <- month.dummies[,-1]
-  
-  #ds$one<-1
-  
-  #ds<-cbind.data.frame(ds, month.dummies)
-  
+ 
+
   ds$obs <- as.factor(1:nrow(ds))
   
   ds$log.offset<-log(ds[,denom]+0.5)
@@ -46,7 +38,7 @@ step_func <- function(ds,
   # Calculate the RSV test ratio log offset
   ds$log.ratio.offset <- log(ds[[denom]] / (1000 * ((ds[[N_CAAP]] + 0.5) / (ds[[N_tested]] + 0.5))))
   
-  # Determine the correct offset variable
+  # Choose offset variable for CAAP or RSV-CAAP
   if (group == 'CAAP') {
     offset.vars <- 'offset(log.offset)'
   } else if (group == 'RSV_CAAP') {
@@ -59,7 +51,6 @@ step_func <- function(ds,
   
   seas.vars <- c('sin12','cos12','sin6','cos6')
   
-  #offset.vars<-'offset(log.ratio.offset)'
   
   if((other.covars=='none')[1]){
     mod.vars<-c(seas.vars,vax.vars)
@@ -100,7 +91,7 @@ step_func <- function(ds,
             Sigma = vcov(mod1))
   
   preds.stage1.regmean <-
-    exp(as.matrix(covars3) %*% t(pred.coefs.reg.mean) +ds$log.offset)
+    exp(as.matrix(covars3) %*% t(pred.coefs.reg.mean) + ds$log.offset)
   
   preds.q<-t(apply(preds.stage1.regmean,1,quantile, probs=c(0.025,0.5,0.975)))
   
@@ -132,15 +123,7 @@ step_func <- function(ds,
   rr.post <- preds.stage1.regmean.SUM / preds.stage1.regmean.cf.SUM
   rr.q.post <- quantile(rr.post, probs = c(0.025, 0.5, 0.975))
   
-  #Cumulative cases
-  #prevented.post.t <-    preds.stage1.regmean.cf - preds.stage1.regmean
-  
-  #cum.post.t <-  apply(prevented.post.t,2, function(x) cumsum(x)   )
-  
-  #cum.post.t.q <-   as.data.frame(t(apply(cum.post.t, 1, quantile, probs = c(0.025, 0.5, 0.975)))) %>% 
-    #cbind.data.frame(., 'date'=as.Date(ds$date))  %>%
-    #rename(median=`50%`, lcl=`2.5%`, ucl=`97.5%`)
-  
+
   
   #Cumulative cases
   prevented.post.t <- preds.stage1.regmean.cf - preds.stage1.regmean
@@ -188,46 +171,7 @@ step_func <- function(ds,
   # Extract values at the last month from cum.post.t
   cum.post.inc.t.q.stable.end <- cum.post.inc.t.q.stable[nrow(cum.post.inc.t.q.stable), ]
   
-  #Cumulative cases
-  #prevented.post.t <-    preds.stage1.regmean.cf - preds.stage1.regmean
-  
-  #cum.post.t <- apply(prevented.post.t, 2, function(x) cumsum(x))
-  
-  # Calculate quantiles for cumulative prevented cases
-  #cum.post.t.q <- as.data.frame(t(apply(cum.post.t, 1, quantile, probs = c(0.025, 0.5, 0.975))))
-  
-  # Calculate cumulative prevented cases per 1,000 population at risk
-  #cum.post.t.q.inc <- cum.post.t.q / exp(ds$log.offset) * 1000
-  
-  # Bind the date column
-  #cum.post.t.q.inc <- cbind.data.frame(cum.post.t.q.inc, 'date' = as.Date(ds$date))
-  
-  # Extract the last data point
-  #cum.post.t.q.inc.end <- cum.post.t.q.inc[nrow(cum.post.t.q.inc), ]
-  
-  
-  
-  
-  # Calculate incidence in the stable PCV-period (Jul 2015 - Jun 2019)
-  #prevented.post.t.stable <- prevented.post.t
-  
-  # Set the first 132 rows of each column to zero
-  #prevented.post.t.stable[1:132, ] <- 0
-  
-  
-  #cum.post.t.stable <- apply(prevented.post.t.stable, 2, function(x) cumsum(x))
-  
-   # Calculate quantiles for cumulative prevented cases
-  #cum.post.t.q.stable <- as.data.frame(t(apply(cum.post.t.stable, 1, quantile, probs = c(0.025, 0.5, 0.975))))
-  
-  # Calculate cumulative prevented cases per 1,000 population at risk
-  #cum.post.t.q.stable.inc <- cum.post.t.q.stable / exp(ds$log.offset) * 1000
-  
-  # Bind the date column
-  #cum.post.t.q.stable.inc <- cbind.data.frame(cum.post.t.q.stable.inc, 'date' = as.Date(ds$date))
-  
-  # Extract the last data point
-  #cum.post.t.q.stable.inc.end <- cum.post.t.q.stable.inc[nrow(cum.post.t.q.stable.inc), ]
+
   
   
   
@@ -278,21 +222,7 @@ step_func <- function(ds,
     cbind.data.frame('outcome'=ds[,outcome_name]) %>%
     mutate(outcome.inc = outcome / exp(ds$log.offset)*1000)
   
- # p.preds <- all.preds %>%
- #   ggplot( aes( x=date, y=median_pred)) +
- #   geom_ribbon(data=all.preds, aes(x=date, ymin=lcl_cf, ymax=ucl_cf), alpha=0.1) +
- #   geom_line() +
- #   geom_point(data=all.preds, aes(x=date, y=outcome.inc), color='red', alpha=0.3, size = 1) +
- #   geom_line(data=all.preds, aes(x=date, y=median_cf), color='blue', lty=2) +
- #   theme_classic() +
- #   ylab('Cases/1000') +
- #   ylim(0,NA)+
- #   geom_vline(xintercept=as.numeric(as.Date(post_period1[1])), lty=2, col='black') +
- #   geom_vline(xintercept = as.numeric(as.Date("2011-07-01")), lty = 2, col = 'black') +
- #   geom_vline(xintercept = as.numeric(as.Date("2015-07-01")), lty = 2, col = 'black')
-#  p.preds <- p.preds + scale_x_date(expand = c(0, 0), breaks = as.Date(c("2004-07-01", "2006-07-01", "2008-07-01", "2010-07-01", "2012-07-01", "2014-07-01", "2016-07-01", "2018-07-01")), labels = c("July 04", "July 06", "July 08", "July 10", "July 12", "July 14", "July 16", "July 18"))
-  
-  
+ 
 
   
   # Assuming `all.preds` is already a data frame with the necessary columns.

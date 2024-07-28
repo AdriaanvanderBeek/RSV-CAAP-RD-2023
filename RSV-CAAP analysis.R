@@ -105,7 +105,7 @@ print(Rate_Ratios_Late_Period_df)
 print(Cumulative_Incidence_Stable_df)
 
 # Optionally, write the results to CSV files for further analysis
-write.csv(Rate_Ratios_Late_Period_df, "Rate_Ratios_RSV_Late_Period_with offset.csv", row.names = TRUE)
+write.csv(Rate_Ratios_Late_Period_df, "Rate_Ratios_RSV_Late_Period_with ratio offset.csv", row.names = TRUE)
 write.csv(Cumulative_Incidence_Stable_df, "Cumulative_Incidence_Stable.csv", row.names = TRUE)
 
 
