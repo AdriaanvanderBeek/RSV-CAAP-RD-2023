@@ -16,7 +16,7 @@ step_func <- function(ds,
   ds$time_index<-(1:nrow(ds))/nrow(ds)
   
   
- 
+  
   
   #Create the dummy variables for 3 post-vaccine time periods
   ds$post1<-as.numeric(ds$date >= post_period1[1] & ds$date <=  post_period1[2]) 
@@ -28,8 +28,8 @@ step_func <- function(ds,
   ds$cos12<-cos(2*pi* ds$time_index/12)
   ds$sin6<-sin(2*pi* ds$time_index/6)
   ds$cos6<-cos(2*pi* ds$time_index/6)
- 
-
+  
+  
   ds$obs <- as.factor(1:nrow(ds))
   
   ds$log.offset<-log(ds[,denom]+0.5)
@@ -45,7 +45,6 @@ step_func <- function(ds,
   } else {
     stop("Unknown group: ", group)
   }
-  
   
   
   seas.vars <- c('sin12','cos12','sin6','cos6')
@@ -71,7 +70,7 @@ step_func <- function(ds,
   # Fit model
   mod1 <- glm.nb(form1, data = ds)
   
-
+  
   aic1<-AIC(mod1)
   deviance1<-summary(mod1)$deviance
   df1<-summary(mod1)$df[2]
@@ -89,8 +88,19 @@ step_func <- function(ds,
             mu = coef(mod1),
             Sigma = vcov(mod1))
   
-  preds.stage1.regmean <-
-    exp(as.matrix(covars3) %*% t(pred.coefs.reg.mean) + ds$log.offset)
+  
+  
+  
+  if (group == "CAAP") {
+    offset <- ds$log.offset
+  } else if (group == "RSV_CAAP") {
+    offset <- ds$log.ratio.offset
+  } else {
+    stop("Unknown group: ", group)
+  }
+  
+  # Calculate preds.stage1.regmean using the selected offset
+  preds.stage1.regmean <- exp(as.matrix(covars3) %*% t(pred.coefs.reg.mean) + offset)
   
   preds.q<-t(apply(preds.stage1.regmean,1,quantile, probs=c(0.025,0.5,0.975)))
   
@@ -104,9 +114,9 @@ step_func <- function(ds,
   covars3.cf <-
     cbind.data.frame(rep(1, times = nrow(covars3.cf)), covars3.cf)
   
-  preds.stage1.regmean.cf <-    exp(as.matrix(covars3.cf) %*% t(pred.coefs.reg.mean)+ ds$log.offset)
+  preds.stage1.regmean.cf <-    exp(as.matrix(covars3.cf) %*% t(pred.coefs.reg.mean)+ offset)
   
-  #preds.cf.q<-t(apply(preds.stage1.regmean.cf,1,quantile, probs=c(0.025,0.5,0.975)))
+  
   
   rr.t <- preds.stage1.regmean / preds.stage1.regmean.cf
   rr.q.t <- t(apply(rr.t, 1, quantile, probs = c(0.025, 0.5, 0.975)))
@@ -122,7 +132,7 @@ step_func <- function(ds,
   rr.post <- preds.stage1.regmean.SUM / preds.stage1.regmean.cf.SUM
   rr.q.post <- quantile(rr.post, probs = c(0.025, 0.5, 0.975))
   
-
+  
   
   #Cumulative cases
   prevented.post.t <- preds.stage1.regmean.cf - preds.stage1.regmean
@@ -130,7 +140,7 @@ step_func <- function(ds,
   
   # Calculate incidence
   incidence <- apply(cum.post.t,2, function(X) X/exp(ds$log.offset)*1000)
-  #incidence <- cum.post.t / denom * 1000
+  
   
   # Bind incidence with confidence intervals
   cum.post.inc.t.q <- as.data.frame(t(apply(incidence, 1, quantile, probs = c(0.025, 0.5, 0.975))))
@@ -170,7 +180,7 @@ step_func <- function(ds,
   # Extract values at the last month from cum.post.t
   cum.post.inc.t.q.stable.end <- cum.post.inc.t.q.stable[nrow(cum.post.inc.t.q.stable), ]
   
-
+  
   
   
   
@@ -191,8 +201,8 @@ step_func <- function(ds,
     geom_vline(xintercept = as.numeric(as.Date("2011-07-01")), lty = 2, col = 'black') +
     geom_vline(xintercept = as.numeric(as.Date("2015-07-01")), lty = 2, col = 'black')
   p.rr.trend <- p.rr.trend + scale_x_date(expand = c(0, 0), breaks = as.Date(c("2004-07-01", "2006-07-01", "2008-07-01", "2010-07-01", "2012-07-01", "2014-07-01", "2016-07-01", "2018-07-01")), labels = c("July 04", "July 06", "July 08", "July 10", "July 12", "July 14", "July 16", "July 18"))
- 
-   
+  
+  
   p.cum_prevented <- cum.post.inc.t.q %>%
     as.data.frame() %>%
     left_join(., ds, by = 'date') %>%
@@ -221,8 +231,8 @@ step_func <- function(ds,
     cbind.data.frame('outcome'=ds[,outcome_name]) %>%
     mutate(outcome.inc = outcome / exp(ds$log.offset)*1000)
   
- 
-
+  
+  
   
   # Assuming `all.preds` is already a data frame with the necessary columns.
   p.preds <- ggplot(all.preds, aes(x = date, y = median_pred)) +
@@ -249,7 +259,7 @@ step_func <- function(ds,
                  breaks = as.Date(c("2004-07-01", "2006-07-01", "2008-07-01", "2010-07-01", "2012-07-01", "2014-07-01", "2016-07-01", "2018-07-01")),
                  labels = c("July 04", "July 06", "July 08", "July 10", "July 12", "July 14", "July 16", "July 18"))
   
-
+  
   
   
   
@@ -287,11 +297,9 @@ step_func <- function(ds,
                  'cum.post.inc.t.q' = cum.post.inc.t.q,
                  'cum.post.inc.t.q.stable' = cum.post.inc.t.q.stable,
                  'cum.post.inc.t.q.stable.end' =  cum.post.inc.t.q.stable.end
-                 #'cum.post.t.q.stable.inc' = cum.post.t.q.stable.inc,
-                 #'cum.post.t.q.inc.end' =  cum.post.t.q.inc.end,
-                 #'cum.post.t.q.stable.inc.end' = cum.post.t.q.stable.inc.end
+                 
   )
-
+  
   return(rr.out)
-
+  
 }
