@@ -1,33 +1,25 @@
 # Load necessary libraries
-#library(zoo)
-#library(htmlTable)
-#library(lme4)
+
 library(lubridate)
-#library(reshape2)
 library(MASS)
 library(ggplot2)
 library(dplyr)
-#library(grid)
-#library(gridExtra)
-#library(tidyr)
 library(kableExtra)
 
-# Set the working directory (if needed)
-setwd("C:/Users/Adrian/OneDrive - BGU/Documents/PIDU/RSV 2023/RSV-CAAP RD 2023")
 
 # Source the external function file
 source("./regression and plot function.R")
 
 
 # Read the model data file
-model_data <- read.csv("model_data.csv")
+model_data <- read.csv("./model_data.csv")
 
 # Check
 print(head(model_data))
 str(model_data)
 
 # Read dataset
-ds1 <- read.csv('CAAP RSV under 60m.csv')
+ds1 <- read.csv("./CAAP RSV under 60m.csv")
 
 # Make sure the date column is in Date format and the data is sorted
 ds1 <- ds1 %>%
@@ -130,13 +122,13 @@ Rate_Ratios_Late_Period_df <- as.data.frame(Rate_Ratios_Late_Period_df)
 colnames(Rate_Ratios_Late_Period_df) <- c("Rate_Ratio_LCI", "Rate_Ratio_Median", "Rate_Ratio_UCI")
 
 Rate_Ratios_Late_Period_df <- Rate_Ratios_Late_Period_df[, c("Rate_Ratio_Median", "Rate_Ratio_LCI", "Rate_Ratio_UCI")]
-Rate_Ratios_Late_Period_df <- round(Rate_Ratios_Late_Period_df, 1)
+Rate_Ratios_Late_Period_df <- round(Rate_Ratios_Late_Period_df, 2)
 
-styled_rr_table <- kbl(Rate_Ratios_Late_Period_df, escape = FALSE) %>%
+RR_table <- kbl(Rate_Ratios_Late_Period_df, escape = FALSE) %>%
   kable_styling(full_width = FALSE, position = "center", font_size = 12) %>%
   add_header_above(c(" " = 1, "Rate Ratios at the end of the Late PCV Period" = 3))
 
-styled_rr_table
+RR_table
 
 
 
@@ -176,11 +168,11 @@ colnames(Cumulative_Incidence_Stable_df) <- c("Cumulative_Inc_LCI", "Cumulative_
 Cumulative_Incidence_Stable_df <- Cumulative_Incidence_Stable_df[, c("Cumulative_Inc_Median", "Cumulative_Inc_LCI", "Cumulative_Inc_UCI")]
 Cumulative_Incidence_Stable_df <- round(Cumulative_Incidence_Stable_df, 1)
 
-styled_ci_table <- kbl(Cumulative_Incidence_Stable_df, escape = FALSE) %>%
+Cum_Inc_table <- kbl(Cumulative_Incidence_Stable_df, escape = FALSE) %>%
   kable_styling(full_width = FALSE, position = "center", font_size = 12) %>%
   add_header_above(c(" " = 1, "Cumulative Incidence per 1,000 at end of Late PCV Period" = 3))
 
-styled_ci_table
+Cum_Inc_table
 
 
 
