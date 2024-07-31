@@ -234,17 +234,17 @@ step_func <- function(ds,
   
   
   
-  # Assuming `all.preds` is already a data frame with the necessary columns.
+ 
   p.preds <- ggplot(all.preds, aes(x = date, y = median_pred)) +
-    # Add ribbon representing 95% CI around the median prediction with royalblue color
+    # Add ribbon representing 95% CI around the median prediction
     geom_ribbon(aes(ymin = lcl_cf, ymax = ucl_cf), fill = 'royalblue') +
     # Add the median prediction line
     geom_line() +
-    # Add points for actual outcomes, colored 'orangered' and no alpha
+    # Add points for actual outcomes
     geom_point(aes(y = outcome.inc), color = 'orangered', size = 0.5) +
-    # Add dashed line for median counterfactual with royalblue color
+    # Add dashed line for median counterfactual
     geom_line(aes(y = median_cf), color = 'royalblue', linetype = 2) +
-    # Apply classic theme
+  
     theme_classic() +
     # Set y-axis label
     ylab('Cases/1000') +
@@ -254,7 +254,7 @@ step_func <- function(ds,
     geom_vline(xintercept = as.numeric(as.Date(post_period1[1])), linetype = 2, color = 'black') +
     geom_vline(xintercept = as.numeric(as.Date("2011-07-01")), linetype = 2, color = 'black') +
     geom_vline(xintercept = as.numeric(as.Date("2015-07-01")), linetype = 2, color = 'black') +
-    # Customize x-axis to specific date breaks and labels
+    # Customize x-axis
     scale_x_date(expand = c(0, 0), 
                  breaks = as.Date(c("2004-07-01", "2006-07-01", "2008-07-01", "2010-07-01", "2012-07-01", "2014-07-01", "2016-07-01", "2018-07-01")),
                  labels = c("July 04", "July 06", "July 08", "July 10", "July 12", "July 14", "July 16", "July 18"))
