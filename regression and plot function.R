@@ -67,9 +67,12 @@ step_func <- function(ds,
   #form1<-as.formula(paste0(outcome_name, '~' ,paste0(c(mod.vars,offset.vars), collapse='+')))
   form1 <- as.formula(paste0(outcome_name, '~', paste(c(mod.vars, offset.vars), collapse='+')))
   
-  # Fit model
-  mod1 <- glm.nb(form1, data = ds)
+  control_params <- glm.control(maxit = 100)
   
+  # Fit model
+  mod1 <- glm.nb(form1, data = ds, control = control_params)
+  
+  preds <- predict(mod1, type='response')
   
   aic1<-AIC(mod1)
   deviance1<-summary(mod1)$deviance
@@ -234,7 +237,7 @@ step_func <- function(ds,
   
   
   
- 
+  
   p.preds <- ggplot(all.preds, aes(x = date, y = median_pred)) +
     # Add ribbon representing 95% CI around the median prediction
     geom_ribbon(aes(ymin = lcl_cf, ymax = ucl_cf), fill = 'royalblue') +
@@ -244,7 +247,7 @@ step_func <- function(ds,
     geom_point(aes(y = outcome.inc), color = 'orangered', size = 0.5) +
     # Add dashed line for median counterfactual
     geom_line(aes(y = median_cf), color = 'royalblue', linetype = 2) +
-  
+    
     theme_classic() +
     # Set y-axis label
     ylab('Cases/1000') +
@@ -296,7 +299,8 @@ step_func <- function(ds,
                  'p.rr.trend'=p.rr.trend,
                  'cum.post.inc.t.q' = cum.post.inc.t.q,
                  'cum.post.inc.t.q.stable' = cum.post.inc.t.q.stable,
-                 'cum.post.inc.t.q.stable.end' =  cum.post.inc.t.q.stable.end
+                 'cum.post.inc.t.q.stable.end' =  cum.post.inc.t.q.stable.end,
+                 'preds' = preds
                  
   )
   
